@@ -40,6 +40,12 @@ public class GenericTokenParser {
     this.handler = handler;
   }
 
+  /**
+   * 这段代码主要处理{@code text}拥有多个符合以{@code openToken}开头，{@code closeToken}结尾的字符串的情况
+   * 同时还要处理拥有{@code openToken}或{@code closeToken}，但是使用了转义字符的情况。
+   * @param text
+   * @return
+   */
   public String parse(String text) {
     if (text == null || text.isEmpty()) {
       return "";
