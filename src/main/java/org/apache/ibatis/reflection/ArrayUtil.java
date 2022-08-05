@@ -38,6 +38,7 @@ public class ArrayUtil {
     if (!clazz.isArray()) {
       return obj.hashCode();
     }
+    // getComponentType()返回数组中元素的Class对象
     final Class<?> componentType = clazz.getComponentType();
     if (long.class.equals(componentType)) {
       return Arrays.hashCode((long[]) obj);
