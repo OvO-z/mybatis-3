@@ -39,9 +39,26 @@ public class ManagedTransaction implements Transaction {
 
   private static final Log log = LogFactory.getLog(ManagedTransaction.class);
 
+  /**
+   * Connection 对象
+   */
   private DataSource dataSource;
+
+  /**
+   * Datasource 对象
+   */
   private TransactionIsolationLevel level;
+
+  /**
+   * 事务隔离级别
+   */
   private Connection connection;
+
+  /**
+   * 是否关闭连接
+   * 这个属性是和 {@link org.apache.ibatis.transaction.jdbc.JdbcTransaction} 不同的
+   *
+   */
   private final boolean closeConnection;
 
   public ManagedTransaction(Connection connection, boolean closeConnection) {

@@ -116,6 +116,7 @@ public class SerializedCache implements Cache {
 
     @Override
     protected Class<?> resolveClass(ObjectStreamClass desc) throws ClassNotFoundException {
+      // 解析类
       return Resources.classForName(desc.getName());
     }
 
