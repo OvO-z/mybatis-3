@@ -53,9 +53,24 @@ import org.apache.ibatis.type.JdbcType;
  */
 public class XMLConfigBuilder extends BaseBuilder {
 
+  /**
+   * 是否已解析
+   */
   private boolean parsed;
+
+  /**
+   * 基于 Java XPath 解析器
+   */
   private final XPathParser parser;
+
+  /**
+   * 环境
+   */
   private String environment;
+
+  /**
+   * ReflectorFactory 对象
+   */
   private final ReflectorFactory localReflectorFactory = new DefaultReflectorFactory();
 
   public XMLConfigBuilder(Reader reader) {
@@ -83,8 +98,10 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   private XMLConfigBuilder(XPathParser parser, String environment, Properties props) {
+    // <1> 创建 Configuration 对象
     super(new Configuration());
     ErrorContext.instance().resource("SQL Mapper Configuration");
+    // <2> 设置 Configuration 的 variables 属性
     this.configuration.setVariables(props);
     this.parsed = false;
     this.environment = environment;
@@ -103,20 +120,33 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void parseConfiguration(XNode root) {
     try {
       // issue #117 read properties first
+      // <1> 解析 <properties /> 标签
       propertiesElement(root.evalNode("properties"));
+      // <2> 解析 <settings /> 标签
       Properties settings = settingsAsProperties(root.evalNode("settings"));
+      // <3> 加载自定义 VFS 实现类
       loadCustomVfs(settings);
       loadCustomLogImpl(settings);
+      // <5> 解析 <typeAliases /> 标签
       typeAliasesElement(root.evalNode("typeAliases"));
+      // <6> 解析 <plugins /> 标签
       pluginElement(root.evalNode("plugins"));
+      // <7> 解析 <objectFactory /> 标签
       objectFactoryElement(root.evalNode("objectFactory"));
+      // <8> 解析 <objectWrapperFactory /> 标签
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+      // <9> 解析 <reflectorFactory /> 标签
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
+      // <10> 赋值 <settings /> 到 Configuration 属性
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
+      // <11> 解析 <environments /> 标签
       environmentsElement(root.evalNode("environments"));
+      // <12> 解析 <databaseIdProvider /> 标签
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+      // <13> 解析 <typeHandlers /> 标签
       typeHandlerElement(root.evalNode("typeHandlers"));
+      // <14> 解析 <mappers /> 标签
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -129,6 +159,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
     Properties props = context.getChildrenAsProperties();
     // Check that all settings are known to the configuration class
+    // 校验每个属性，在 Configuration 中，有相应的 setting 方法，否则抛出 BuilderException 异常
     MetaClass metaConfig = MetaClass.forClass(Configuration.class, localReflectorFactory);
     for (Object key : props.keySet()) {
       if (!metaConfig.hasSetter(String.valueOf(key))) {
@@ -186,8 +217,10 @@ public class XMLConfigBuilder extends BaseBuilder {
       for (XNode child : parent.getChildren()) {
         String interceptor = child.getStringAttribute("interceptor");
         Properties properties = child.getChildrenAsProperties();
+        // <1> 创建 Interceptor 对象，并设置属性
         Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor().newInstance();
         interceptorInstance.setProperties(properties);
+        // <2> 添加到 configuration 中
         configuration.addInterceptor(interceptorInstance);
       }
     }
@@ -195,9 +228,13 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void objectFactoryElement(XNode context) throws Exception {
     if (context != null) {
+      // 获得 ObjectFactory 的实现类
       String type = context.getStringAttribute("type");
+      // 获得 Properties 属性
       Properties properties = context.getChildrenAsProperties();
+      // <1> 创建 ObjectFactory 对象，并设置 Properties 属性
       ObjectFactory factory = (ObjectFactory) resolveClass(type).getDeclaredConstructor().newInstance();
+      // <2> 设置 Configuration 的 objectFactory 属性
       factory.setProperties(properties);
       configuration.setObjectFactory(factory);
     }
@@ -221,21 +258,27 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void propertiesElement(XNode context) throws Exception {
     if (context != null) {
+      // 读取子标签们，为 Properties 对象
       Properties defaults = context.getChildrenAsProperties();
+      // 读取 resource 和 url 属性
       String resource = context.getStringAttribute("resource");
       String url = context.getStringAttribute("url");
       if (resource != null && url != null) {
         throw new BuilderException("The properties element cannot specify both a URL and a resource based property file reference.  Please specify one or the other.");
       }
+      // 读取本地 Properties 配置文件到 defaults 中。
       if (resource != null) {
         defaults.putAll(Resources.getResourceAsProperties(resource));
       } else if (url != null) {
+        // 读取远程 Properties 配置文件到 defaults 中。
         defaults.putAll(Resources.getUrlAsProperties(url));
       }
+      // 覆盖 configuration 中的 Properties 对象到 defaults 中。
       Properties vars = configuration.getVariables();
       if (vars != null) {
         defaults.putAll(vars);
       }
+      // 设置 defaults 到 parser 和 configuration 中。
       parser.setVariables(defaults);
       configuration.setVariables(defaults);
     }

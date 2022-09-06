@@ -56,8 +56,22 @@ import org.apache.ibatis.type.TypeHandler;
 public class XMLMapperBuilder extends BaseBuilder {
 
   private final XPathParser parser;
+
+  /**
+   * Mapper 构造器助手 <br/>
+   * builderAssistant 属性，{@link MapperBuilderAssistant} 对象，是 {@link XMLMapperBuilder} 和 {@link org.apache.ibatis.builder.annotation.MapperAnnotationBuilder} 的小助手，提供了一些公用的方法，例如创建 ParameterMap、MappedStatement 对象等等
+   */
   private final MapperBuilderAssistant builderAssistant;
+  /**
+   * 可被其他语句引用的可重用语句块的集合
+   *
+   * 例如：< sql id="userColumns"> ${alias}.id,${alias}.username,${alias}.password < /sql>
+   */
   private final Map<String, XNode> sqlFragments;
+
+  /**
+   * 资源引用的地址
+   */
   private final String resource;
 
   @Deprecated
@@ -84,21 +98,32 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private XMLMapperBuilder(XPathParser parser, Configuration configuration, String resource, Map<String, XNode> sqlFragments) {
     super(configuration);
+    // 创建 MapperBuilderAssistant 对象
     this.builderAssistant = new MapperBuilderAssistant(configuration, resource);
     this.parser = parser;
     this.sqlFragments = sqlFragments;
     this.resource = resource;
   }
 
+  /**
+   * 解析 Mapper XML 配置文件
+   */
   public void parse() {
+    // <1> 判断当前 Mapper 是否已经加载过
     if (!configuration.isResourceLoaded(resource)) {
+      // <2> 解析 `<mapper />` 节点
       configurationElement(parser.evalNode("/mapper"));
+      // <3> 标记该 Mapper 已经加载过
       configuration.addLoadedResource(resource);
+      // <4> 绑定 Mapper
       bindMapperForNamespace();
     }
 
+    // <5> 解析待定的 <resultMap /> 节点
     parsePendingResultMaps();
+    // <6> 解析待定的 <cache-ref /> 节点
     parsePendingCacheRefs();
+    // <7> 解析待定的 SQL 语句的节点
     parsePendingStatements();
   }
 
@@ -108,16 +133,23 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void configurationElement(XNode context) {
     try {
+      // <1> 获得 namespace 属性
       String namespace = context.getStringAttribute("namespace");
       if (namespace == null || namespace.isEmpty()) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
+      // <1> 设置 namespace 属性
       builderAssistant.setCurrentNamespace(namespace);
+      // <2> 解析 <cache-ref /> 节点
       cacheRefElement(context.evalNode("cache-ref"));
+      // <3> 解析 <cache /> 节点
       cacheElement(context.evalNode("cache"));
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+      // <4> 解析 <resultMap /> 节点们
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      // <5> 解析 <sql /> 节点们
       sqlElement(context.evalNodes("/mapper/sql"));
+      // <6> 解析 <select /> <insert /> <update /> <delete /> 节点们
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);
